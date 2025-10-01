@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #409EFF;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #409EFF;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #66b1ff;
+        }
+        .log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 登录测试页面</h1>
+        <p style="text-align: center; color: #666;">
+            这个页面直接调用后端API，绕过Vue路由
+        </p>
+        
+        <div class="form-group">
+            <label>用户名:</label>
+            <input type="text" id="username" value="admin">
+        </div>
+        
+        <div class="form-group">
+            <label>密码:</label>
+            <input type="password" id="password" value="admin123">
+        </div>
+        
+        <button onclick="testLogin()">登录并跳转</button>
+        
+        <div class="log" id="log">
+            <div class="info">等待登录...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div class="${type}">[${time}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function testLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            log('开始登录测试...', 'info');
+            log(`用户名: ${username}`, 'info');
+            
+            // 清除旧数据
+            localStorage.clear();
+            log('已清除旧的localStorage', 'info');
+            
+            // 调用登录API
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => {
+                log(`HTTP状态: ${res.status}`, res.status === 200 ? 'success' : 'error');
+                return res.json();
+            })
+            .then(data => {
+                log('收到响应: ' + JSON.stringify(data, null, 2), 'info');
+                
+                if (data.access_token) {
+                    // 保存token
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user_info', JSON.stringify(data.user));
+                    
+                    log('✅ Token已保存到localStorage', 'success');
+                    log('Token长度: ' + data.access_token.length, 'success');
+                    log('Token前缀: ' + data.access_token.substring(0, 30) + '...', 'success');
+                    
+                    // 测试token是否可以读取
+                    const savedToken = localStorage.getItem('access_token');
+                    if (savedToken === data.access_token) {
+                        log('✅ Token验证成功，可以从localStorage读取', 'success');
+                    } else {
+                        log('❌ Token验证失败！', 'error');
+                    }
+                    
+                    // 测试获取用户信息
+                    log('正在测试Token有效性...', 'info');
+                    fetch('http://localhost:5000/api/auth/me', {
+                        headers: {
+                            'Authorization': 'Bearer ' + data.access_token
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(userData => {
+                        log('✅ Token有效！用户: ' + userData.user.username, 'success');
+                        log('3秒后将跳转到文档页面...', 'success');
+                        
+                        setTimeout(() => {
+                            log('正在跳转...', 'info');
+                            window.location.href = '/documents';
+                        }, 3000);
+                    })
+                    .catch(err => {
+                        log('❌ Token验证失败: ' + err, 'error');
+                    });
+                    
+                } else {
+                    log('❌ 登录失败：没有收到access_token', 'error');
+                }
+            })
+            .catch(err => {
+                log('❌ 请求失败: ' + err, 'error');
+                log('请确认后端服务运行在 http://localhost:5000', 'error');
+            });
+        }
+    </script>
+</body>
+</html>
+
+

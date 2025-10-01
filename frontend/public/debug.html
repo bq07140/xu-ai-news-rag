@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录调试工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #409EFF;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #409EFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background: #66b1ff;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .log-box {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .log-item {
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .log-item:last-child {
+            border-bottom: none;
+        }
+        .success { color: #67C23A; font-weight: bold; }
+        .error { color: #F56C6C; font-weight: bold; }
+        .info { color: #409EFF; }
+        .warning { color: #E6A23C; }
+        .step { color: #303133; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 XU-News-AI-RAG 登录调试工具</h1>
+        <p class="subtitle">点击按钮自动执行完整的登录测试流程</p>
+        
+        <button id="startBtn" onclick="startDebug()">开始调试登录</button>
+        
+        <div class="log-box" id="logBox">
+            <div class="info">准备就绪，点击按钮开始调试...</div>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+
+        function log(message, type = 'info') {
+            const logBox = document.getElementById('logBox');
+            if (logCount === 0) {
+                logBox.innerHTML = '';
+            }
+            logCount++;
+            
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = `log-item ${type}`;
+            div.textContent = `[${time}] ${message}`;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function startDebug() {
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true;
+            btn.textContent = '调试进行中...';
+            logCount = 0;
+
+            log('========================================', 'step');
+            log('开始登录调试流程', 'step');
+            log('========================================', 'step');
+            log('');
+
+            // 步骤1: 清除缓存
+            log('步骤 1/8: 清除localStorage', 'step');
+            localStorage.clear();
+            sessionStorage.clear();
+            log('✅ localStorage已清除', 'success');
+            log('');
+
+            // 步骤2: 调用登录API
+            log('步骤 2/8: 调用登录API...', 'step');
+            log('   URL: http://localhost:5000/api/auth/login', 'info');
+            log('   用户名: admin', 'info');
+            
+            fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: 'admin', password: 'admin123'})
+            })
+            .then(res => {
+                log('');
+                log('步骤 3/8: 收到登录响应', 'step');
+                log('   HTTP状态: ' + res.status, res.status === 200 ? 'success' : 'error');
+                return res.json();
+            })
+            .then(data => {
+                log('   响应消息: ' + data.message, 'info');
+                
+                if (!data.access_token) {
+                    log('❌ 致命错误: 没有收到access_token!', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '重新开始';
+                    return;
+                }
+                
+                log('✅ 收到access_token', 'success');
+                log('');
+                
+                // 步骤3: 保存Token
+                const token = data.access_token;
+                log('步骤 4/8: 保存Token到localStorage', 'step');
+                log('   Token长度: ' + token.length + ' 字符', 'info');
+                log('   Token前缀: ' + token.substring(0, 30) + '...', 'info');
+                
+                localStorage.setItem('access_token', token);
+                localStorage.setItem('user_info', JSON.stringify(data.user));
+                log('✅ Token已保存', 'success');
+                log('');
+                
+                // 步骤4: 验证保存
+                log('步骤 5/8: 验证localStorage保存', 'step');
+                const savedToken = localStorage.getItem('access_token');
+                const savedUser = localStorage.getItem('user_info');
+                
+                if (savedToken === token) {
+                    log('✅ Token读取验证通过', 'success');
+                } else {
+                    log('❌ Token读取验证失败!', 'error');
+                    btn.disabled = false;
+                    btn.textContent = '重新开始';
+                    return;
+                }
+                log('   保存的用户: ' + JSON.parse(savedUser).username, 'info');
+                log('');
+                
+                // 步骤5: 测试Token有效性
+                log('步骤 6/8: 测试Token有效性 (/api/auth/me)', 'step');
+                fetch('http://localhost:5000/api/auth/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                })
+                .then(res => {
+                    log('   响应状态: ' + res.status, res.status === 200 ? 'success' : 'error');
+                    if (res.status !== 200) {
+                        log('❌ Token在后端验证失败!', 'error');
+                        btn.disabled = false;
+                        btn.textContent = '重新开始';
+                        return Promise.reject('Token验证失败');
+                    }
+                    return res.json();
+                })
+                .then(userData => {
+                    log('✅ Token有效，用户: ' + userData.user.username, 'success');
+                    log('');
+                    
+                    // 步骤6: 测试文档API
+                    log('步骤 7/8: 测试文档列表API', 'step');
+                    fetch('http://localhost:5000/api/documents/?page=1&per_page=20', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
+                    })
+                    .then(res => {
+                        log('   响应状态: ' + res.status, res.status === 200 ? 'success' : 'error');
+                        if (res.status !== 200) {
+                            log('❌ 文档API调用失败!', 'error');
+                            btn.disabled = false;
+                            btn.textContent = '重新开始';
+                            return Promise.reject('文档API失败');
+                        }
+                        return res.json();
+                    })
+                    .then(docsData => {
+                        log('✅ 文档API正常，总数: ' + docsData.total, 'success');
+                        log('');
+                        
+                        // 步骤7: 最终验证
+                        log('步骤 8/8: 最终验证', 'step');
+                        log('   Token: ' + (localStorage.getItem('access_token') ? '✅ 存在' : '❌ 丢失'), 'info');
+                        log('   用户信息: ' + (localStorage.getItem('user_info') ? '✅ 存在' : '❌ 丢失'), 'info');
+                        log('');
+                        
+                        log('========================================', 'step');
+                        log('🎉 所有测试通过！准备跳转...', 'success');
+                        log('========================================', 'step');
+                        log('');
+                        log('⏰ 5秒倒计时后跳转到文档页面...', 'warning');
+                        log('   如果跳转后还是闪退，说明是Vue组件的问题', 'warning');
+                        log('');
+                        
+                        let countdown = 5;
+                        const timer = setInterval(() => {
+                            countdown--;
+                            if (countdown > 0) {
+                                log('   ' + countdown + '秒...', 'info');
+                            } else {
+                                clearInterval(timer);
+                                log('🚀 正在跳转...', 'info');
+                                
+                                // 再次确认token存在
+                                const finalToken = localStorage.getItem('access_token');
+                                if (finalToken) {
+                                    log('✅ 跳转前Token仍然存在', 'success');
+                                    window.location.href = '/documents';
+                                } else {
+                                    log('❌ 跳转前Token丢失了!!!', 'error');
+                                }
+                            }
+                        }, 1000);
+                        
+                        btn.textContent = '测试完成，即将跳转...';
+                    })
+                    .catch(err => {
+                        log('❌ 文档API错误: ' + err, 'error');
+                        btn.disabled = false;
+                        btn.textContent = '重新开始';
+                    });
+                })
+                .catch(err => {
+                    log('❌ Token验证错误: ' + err, 'error');
+                    btn.disabled = false;
+                    btn.textContent = '重新开始';
+                });
+            })
+            .catch(err => {
+                log('❌ 登录API错误: ' + err, 'error');
+                btn.disabled = false;
+                btn.textContent = '重新开始';
+            });
+        }
+    </script>
+</body>
+</html>
+
+

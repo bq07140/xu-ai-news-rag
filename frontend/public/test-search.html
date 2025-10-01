@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        input {
+            width: 60%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #40a9ff;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        .result-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #1890ff;
+        }
+        .result-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .result-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            margin: 0 5px;
+            background: #e6f7ff;
+            color: #1890ff;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 搜索功能测试页面</h1>
+        
+        <div>
+            <h3>1. 先登录获取 Token</h3>
+            <input type="text" id="username" placeholder="用户名" value="bq07140@gmail.com">
+            <input type="password" id="password" placeholder="密码" value="bq013317">
+            <button onclick="login()">登录</button>
+            <div id="login-status"></div>
+        </div>
+
+        <hr style="margin: 30px 0;">
+
+        <div>
+            <h3>2. 测试搜索</h3>
+            <input type="text" id="query" placeholder="输入搜索关键词" value="人工智能">
+            <button onclick="search()">搜索</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('access_token') || '';
+        
+        // 登录
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const statusEl = document.getElementById('login-status');
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    token = data.access_token;
+                    localStorage.setItem('access_token', token);
+                    statusEl.innerHTML = '<p class="success">✅ 登录成功！Token已保存</p>';
+                } else {
+                    statusEl.innerHTML = `<p class="error">❌ 登录失败: ${data.error}</p>`;
+                }
+            } catch (error) {
+                statusEl.innerHTML = `<p class="error">❌ 请求失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 搜索
+        async function search() {
+            const query = document.getElementById('query').value;
+            const resultsEl = document.getElementById('results');
+            
+            if (!token) {
+                resultsEl.innerHTML = '<p class="error">❌ 请先登录</p>';
+                return;
+            }
+            
+            resultsEl.innerHTML = '<p>🔄 搜索中...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/search/semantic', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        query: query,
+                        k: 10
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    resultsEl.innerHTML = `<p class="error">❌ 搜索失败: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultsEl.innerHTML = `<p class="error">❌ 请求失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 显示结果
+        function displayResults(data) {
+            const resultsEl = document.getElementById('results');
+            
+            if (data.count === 0) {
+                resultsEl.innerHTML = '<p>😕 未找到相关结果</p>';
+                return;
+            }
+            
+            let html = `
+                <h3>✅ 搜索成功！找到 ${data.count} 个结果</h3>
+                <p><strong>查询:</strong> ${data.query}</p>
+                <p><strong>提取的关键词:</strong> ${data.keywords ? data.keywords.join(', ') : '无'}</p>
+                <hr>
+            `;
+            
+            data.results.forEach((item, index) => {
+                const matchScore = item.match_score !== undefined ? 
+                    `<span class="tag">匹配度: ${(item.match_score * 100).toFixed(0)}%</span>` : '';
+                const keywords = item.matched_keywords && item.matched_keywords.length ? 
+                    `<span class="tag">${item.matched_keywords.join(', ')}</span>` : '';
+                
+                html += `
+                    <div class="result-item">
+                        <div class="result-title">${index + 1}. ${item.title}</div>
+                        <div class="result-meta">
+                            <span class="tag">${item.category}</span>
+                            ${matchScore}
+                            ${keywords}
+                            <span style="margin-left:10px">来源: ${item.source}</span>
+                        </div>
+                        <div style="margin-top:10px; color:#666;">${item.summary || '无摘要'}</div>
+                        <div style="margin-top:5px; font-size:12px; color:#999;">
+                            创建时间: ${new Date(item.created_at).toLocaleString('zh-CN')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsEl.innerHTML = html;
+        }
+        
+        // 页面加载时检查Token
+        window.onload = function() {
+            if (token) {
+                document.getElementById('login-status').innerHTML = 
+                    '<p class="success">✅ 已有Token，可以直接搜索</p>';
+            }
+        };
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,256 @@
+# XU AI News RAG - .gitignore
+
+# ===================================
+# Python
+# ===================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# ===================================
+# Node.js / Frontend
+# ===================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===================================
+# Environment Variables
+# ===================================
+.env
+.env.local
+.env.*.local
+*.env
+
+# But keep example files
+!env.example
+!env.baidu_search
+
+# ===================================
+# Database Files
+# ===================================
+# SQLite databases (keep structure, not data)
+backend/instance/*.db
+backend/instance/*.db-journal
+backend/instance/*.db-shm
+backend/instance/*.db-wal
+
+# But keep the directory
+!backend/instance/.gitkeep
+
+# ===================================
+# Uploaded Files
+# ===================================
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# ===================================
+# FAISS Index
+# ===================================
+backend/faiss_index/*.index
+backend/faiss_index/*.pkl
+
+# But keep the directory
+!backend/faiss_index/.gitkeep
+
+# ===================================
+# Logs
+# ===================================
+*.log
+logs/
+*.log.*
+
+# ===================================
+# OS Files
+# ===================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ===================================
+# IDE / Editors
+# ===================================
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# ===================================
+# Testing
+# ===================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ===================================
+# Temporary Files
+# ===================================
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+
+# ===================================
+# Project Specific
+# ===================================
+# Keep screenshots folder but ignore large files
+screenshots/*.psd
+screenshots/*.ai
+
+# Ignore temporary test files
+backend/test_*.py
+!backend/test_qianfan_search.py
+
+# Ignore migration files if any
+migrations/
+
+# ===================================
+# Documentation (keep these)
+# ===================================
+# !README.md
+# !PRD.md
+# !N8N_SIMPLE_SETUP.md
+
+# ===================================
+# Security
+# ===================================
+# Never commit secrets or credentials
+*.pem
+*.key
+*.cert
+secrets/
+credentials/
+
+# JWT secret keys
+secret_key.txt
+
+# API keys (already covered by .env)
+*_api_key*
+*_secret*
+
+# ===================================
+# Large Files / Binary
+# ===================================
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.dmg
+*.iso
+
+# Large data files
+*.csv.large
+*.json.large
+*.txt.large
+
+# ===================================
+# Cache
+# ===================================
+.cache/
+*.cache
+.sass-cache/
+.parcel-cache/
+
+# ===================================
+# Build artifacts
+# ===================================
+*.pyc
+*.pyo
+*.dll
+*.exe
+*.out
+*.app
+
+# ===================================
+# END
+# ===================================
+
